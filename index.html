@@ -3943,47 +3943,44 @@
 </script>
 
 <script>
-/* Бонусы: подставляем изображения из мини-приложения (miniapp/...), со скелетоном и фолбэком */
-(function mountBonusPicsFromMiniapp(){
-  const items = document.querySelectorAll('#bonuses .bonus-item');
-  items.forEach(it=>{
+(function mountBonusPics(){
+  const repoPrefix = (() => {
+    // если страница вида /ВАШ_РЕПО/..., возьмём этот сегмент как префикс
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    // для user/organization pages (или кастомного домена) префикс пустой
+    return (seg && !/\.io$/.test(location.hostname)) ? '/' + seg : '';
+  })();
+  const PREFIX = window.ASSET_PREFIX || repoPrefix || '';
+
+  document.querySelectorAll('#bonuses .bonus-item').forEach(it=>{
     const pic = it.querySelector('.pic'); if (!pic) return;
+    let src = (it.dataset.img || '').trim(); if (!src) return;
 
-    // Откуда брать изображение:
-    // 1) data-img="promo1.png" → возьмём /miniapp/promo1.png
-    // 2) data-img="/miniapp/promo1.png" → используем как есть
-    // 3) data-img="https://..." → внешняя ссылка
-    let src = (it.dataset.img || '').trim();
-    if (!src) return;
-
-    if (/^https?:\/\//i.test(src)){
-      // абсолютный URL — не трогаем
+    if (/^https?:\/\//i.test(src)) {
+      // as is
     } else if (src.startsWith('/miniapp/')) {
-      // уже с префиксом — оставляем
+      // as is (абсолют)
+    } else if (src.startsWith('miniapp/')) {
+      src = PREFIX + '/' + src.replace(/^\/+/, '');
+    } else if (src.startsWith('/')) {
+      // корень сайта — as is
     } else {
-      // имя файла → подставляем префикс каталога мини-приложения
-      src = '/miniapp/' + src.replace(/^\/+/, '');
+      src = PREFIX + '/miniapp/' + src.replace(/^\/+/, '');
     }
 
     pic.classList.add('loading');
     const img = new Image();
     img.alt = it.querySelector('.h2, h3')?.textContent?.trim() || 'bonus';
-    img.loading = 'lazy';
-    img.decoding = 'async';
-    img.src = src;
+    img.loading = 'lazy'; img.decoding = 'async'; img.src = src;
 
-    img.onload = ()=> pic.classList.remove('loading');
-    img.onerror = ()=>{ 
-      // Фолбэк — положи свой плейсхолдер в miniapp/placeholder.png
-      img.src = '/miniapp/placeholder.png';
-      pic.classList.remove('loading');
-    };
+    img.onload  = ()=> pic.classList.remove('loading');
+    img.onerror = ()=>{ img.src = PREFIX + '/placeholder.png'; pic.classList.remove('loading'); };
 
-    pic.innerHTML = '';
-    pic.appendChild(img);
+    pic.innerHTML = ''; pic.appendChild(img);
   });
 })();
 </script>
+
 
 
 </body>
